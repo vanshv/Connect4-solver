@@ -16,25 +16,26 @@ public:
     {
         nodeCount++;
 
+        long long next = P.possibleNonLoosingMoves();
+        if (next == 0)
+        {
+            return -(WIDTH * HEIGHT - P.moves) / 2;
+        }
+
         // draw condition
         if (P.moves == WIDTH * HEIGHT)
             return 0;
 
-        // win condition
-        for (int x = 0; x < WIDTH; x++)
-            if (P.canPlay(x) && P.isWinningMove(x))
-                return (WIDTH * HEIGHT + 1 - P.moves) / 2;
-
         int max = (WIDTH * HEIGHT - 1 - P.moves) / 2;
         int val = tt.get(P.key());
-        if (val){
+        if (val)
+        {
             max = val + MIN_SCORE - 1;
         }
-
         if (beta > max)
         {
             beta = max;
-            if (alpha >= beta)
+            if (alpha == beta)
             {
                 return beta;
             }
@@ -43,7 +44,7 @@ public:
         //  find best move
         for (int x = 0; x < WIDTH; x++)
         {
-            if (P.canPlay(columnOrder[x]))
+            if (next & P.column_mask(columnOrder[x]))
             {
                 Position P2(P);
                 P2.playMove(columnOrder[x]);
@@ -53,10 +54,7 @@ public:
                 {
                     return score;
                 }
-                if (score > alpha)
-                {
-                    alpha = score;
-                }
+                alpha = std::max(score, alpha);
             }
         }
 
@@ -66,7 +64,7 @@ public:
 
     // 98746231 -> prime
     Solver() : nodeCount{0}, tt(98746231)
-    { 
+    {
         reset();
     }
 
@@ -78,7 +76,23 @@ public:
     int solve(Position &P)
     {
         nodeCount = 0;
-        return negamax(P, -WIDTH * HEIGHT / 2, WIDTH * HEIGHT / 2);
+        if (P.canWinNext())
+        {
+            return (WIDTH * HEIGHT + 1 - P.moves) / 2;
+        }
+        int min = -(WIDTH * HEIGHT - P.moves) / 2;
+        int max = (WIDTH * HEIGHT + 1 - P.moves) / 2;
+    
+        while (min < max)
+        {
+            int med = min + (max - min) / 2;
+            int r = negamax(P, med, med + 1);
+            if (r <= med)
+                max = r;
+            else
+                min = r;
+        }
+        return min;
     }
 };
 
